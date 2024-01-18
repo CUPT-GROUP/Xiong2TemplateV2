@@ -130,8 +130,8 @@ export default {
       },
       dataImages: [],
       content: '111',
-      TemplateArr:[],
-      selectVal:''
+      TemplateArr: [],
+      selectVal: ''
     }
   },
   computed: {
@@ -331,34 +331,53 @@ export default {
             onclick: function () {
               // console.log( _this.$refs['vueSelectImage'])
               // 在这里写一个弹出框
-              let titleTemplate='<p class="MsoNormal" style="margin-bottom: 12.0pt; mso-para-margin-bottom: 1.0gd; text-align: center; line-height: 22.0pt; mso-line-height-rule: exactly; layout-grid-mode: char;" align="center"><span style="font-size: 18.0pt; font-family: 黑体; mso-bidi-font-family: 宋体;">{{}}</span></p>'
-              let contentTemplate='<p class="MsoNormal" style="text-indent: 21.0pt; line-height: 150%;"><span style="font-size: 12.0pt; line-height: 150%; font-family: 宋体; mso-ascii-font-family: \'Times New Roman\'; mso-bidi-font-family: \'Times New Roman\';">{{}}</span></p>'
+              let titleTemplate = '<p class="MsoNormal" style="margin-bottom: 12.0pt; mso-para-margin-bottom: 1.0gd; text-align: center; line-height: 22.0pt; mso-line-height-rule: exactly; layout-grid-mode: char;" align="center"><span style="font-size: 18.0pt; font-family: 黑体; mso-bidi-font-family: 宋体;">{{}}</span></p>'
+              let contentTemplate = '<p class="MsoNormal" style="text-indent: 21.0pt; line-height: 150%;"><span style="font-size: 12.0pt; line-height: 150%; font-family: 宋体; mso-ascii-font-family: \'Times New Roman\'; mso-bidi-font-family: \'Times New Roman\';">{{}}</span></p>'
+              let imageTemplate = '<p class="MsoNormal" style="text-align: center; line-height: 150%;"><img src="{{image}}" alt="图片1描述" style="display: block; margin: 0 auto;"></p>';
+
               _this.editor = editor
               // _this.dialogCodeEditVisible = true
               _this.$nextTick(() => {
                 _this.content = _this.getContent();
-                var regexContent=/(<([^>]+)>)/ig;//匹配html标签文本内容
-                let pArr=[];//每个段落
-                var regex=/<p(?:(?!<\/p>).|\n)*?<\/p>/gm;//匹配每个p标签
-                _this.content.replace(regex,str=>{pArr.push(str)});
-                let contentArr=[];//每个段落的每个内容
-                pArr.forEach((item)=>{
-                  let temp=item.replace(regexContent,"");
-                  if(!(temp =='&nbsp;')){
+                var regexContent = /(<([^>]+)>)/ig;//匹配html标签文本内容
+                let pArr = [];//每个段落
+                var regex = /<p(?:(?!<\/p>).|\n)*?<\/p>/gm;//匹配每个p标签
+                var regexKeepImgSrc = /<img.*?src=['"](.*?)['"].*?>/i//匹配所有的url
+                var regexImg = /<img[^>]*>/i;
+
+                //将取到的段落压入数组
+                _this.content.replace(regex, str => { pArr.push(str) });
+                let contentArr = [];//每个段落的每个内容
+                pArr.forEach((item) => {
+                  // 首先将有img 标签的p分开转换，防止被过滤掉
+                  let temp = "";
+                  if (regexImg.test(item)) {
+                    // 获取到url
+                    temp = "{{{url}}}" + item.match(regexKeepImgSrc);
+                  } else {
+                    //获取到文本值
+                    temp = item.replace(regexContent, "");
+                  }
+
+                  if (!(temp == '&nbsp;')) {
                     contentArr.push(temp);
                   }
                 })
 
-                let domStr='';
-                contentArr.forEach((item,index)=>{
-                  if(index===0){
-                    domStr+=titleTemplate.replace('{{}}',item);
-                  }else {
-                    domStr+=contentTemplate.replace('{{}}',item);
+                let domStr = '';
+                contentArr.forEach((item, index) => {
+                  if (index === 0) {
+                    domStr += titleTemplate.replace('{{}}', item);
+                  } else {
+                    if (item.includes("{{{url}}}")) {
+                      item.replace("{{{url}}}", "");
+                      imageTemplate.replace('{{image}}', item);
+                    }
+                    domStr += contentTemplate.replace('{{}}', item);
                   }
                 })
                 _this.editor.execCommand('SelectAll');
-                _this.editor.execCommand('Strikethrough',false);
+                _this.editor.execCommand('Strikethrough', false);
                 _this.editor.selection.setContent(domStr);
               });
             }
@@ -373,10 +392,10 @@ export default {
               // 在这里写一个弹出框
               _this.editor = editor
               _this.dialogTempInsertVisible = true
-              _this.selectVal=_this.editor.selection.getContent({format : 'text'})
-              _this.$axios.get('/api1/template/getAll').then(res=>{
-                _this.TemplateArr=res.data.data;
-              },err=>{
+              _this.selectVal = _this.editor.selection.getContent({ format: 'text' })
+              _this.$axios.get('/api1/template/getAll').then(res => {
+                _this.TemplateArr = res.data.data;
+              }, err => {
                 console.log(error);
               })
               _this.$nextTick(() => {
